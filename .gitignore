@@ -1,0 +1,7 @@
+node_modules/
+scaffolds/
+themes/
+_config.yml
+db.json
+package.json
+package-lock.json

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.3.0" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.3.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.3.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.3.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.3.0" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '6.3.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="1. 如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的 error 对象返回给调用者，那我们可以尽量少甚至可以不用 panic 函数。2. 如果无法保证上面的情况，那为了确保程序在运行时不会因为 未知的未知 导致崩溃，那 panic 函数的使用可能不得不加在任何需要的地方。3. 我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景">
+<meta name="keywords" content="Go">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go 异常处理机制——defer, error, panic, recover">
+<meta property="og:url" content="http://blog.ozy.tech/2018/07/27/error/index.html">
+<meta property="og:site_name" content="欧钟艺的博客">
+<meta property="og:description" content="1. 如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的 error 对象返回给调用者，那我们可以尽量少甚至可以不用 panic 函数。2. 如果无法保证上面的情况，那为了确保程序在运行时不会因为 未知的未知 导致崩溃，那 panic 函数的使用可能不得不加在任何需要的地方。3. 我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2018-07-27T07:16:30.024Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Go 异常处理机制——defer, error, panic, recover">
+<meta name="twitter:description" content="1. 如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的 error 对象返回给调用者，那我们可以尽量少甚至可以不用 panic 函数。2. 如果无法保证上面的情况，那为了确保程序在运行时不会因为 未知的未知 导致崩溃，那 panic 函数的使用可能不得不加在任何需要的地方。3. 我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景">
+
+
+
+
+
+
+  <link rel="canonical" href="http://blog.ozy.tech/2018/07/27/error/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Go 异常处理机制——defer, error, panic, recover | 欧钟艺的博客</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">欧钟艺的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">要拍照的事 可不少</p>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />首页</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />标签</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />归档</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.ozy.tech/2018/07/27/error/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="欧钟艺">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="欧钟艺的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Go 异常处理机制——defer, error, panic, recover
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2018-07-27 15:00:17 / 修改时间：15:16:30" itemprop="dateCreated datePublished" datetime="2018-07-27T15:00:17+08:00">2018-07-27</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="1-如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的-error-对象返回给调用者，那我们可以尽量少甚至可以不用-panic-函数。"><a href="#1-如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的-error-对象返回给调用者，那我们可以尽量少甚至可以不用-panic-函数。" class="headerlink" title="1. 如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的 error 对象返回给调用者，那我们可以尽量少甚至可以不用 panic 函数。"></a>1. 如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的 error 对象返回给调用者，那我们可以尽量少甚至可以不用 panic 函数。</h3><h3 id="2-如果无法保证上面的情况，那为了确保程序在运行时不会因为-未知的未知-导致崩溃，那-panic-函数的使用可能不得不加在任何需要的地方。"><a href="#2-如果无法保证上面的情况，那为了确保程序在运行时不会因为-未知的未知-导致崩溃，那-panic-函数的使用可能不得不加在任何需要的地方。" class="headerlink" title="2. 如果无法保证上面的情况，那为了确保程序在运行时不会因为 未知的未知 导致崩溃，那 panic 函数的使用可能不得不加在任何需要的地方。"></a>2. 如果无法保证上面的情况，那为了确保程序在运行时不会因为 未知的未知 导致崩溃，那 panic 函数的使用可能不得不加在任何需要的地方。</h3><h3 id="3-我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景可能出现的情况，处理好-已知的未知，在确定需要的地方使用-panic-机制。"><a href="#3-我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景可能出现的情况，处理好-已知的未知，在确定需要的地方使用-panic-机制。" class="headerlink" title="3. 我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景可能出现的情况，处理好 已知的未知，在确定需要的地方使用 panic 机制。"></a>3. 我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景可能出现的情况，处理好 已知的未知，在确定需要的地方使用 panic 机制。</h3><h1 id="defer"><a href="#defer" class="headerlink" title="defer"></a>defer</h1><p>defer关键字用来标记最后执行的Go语句，一般用在资源释放、关闭连接等操作，会在函数关闭前调用。</p>
+<p>多个defer的定义与执行类似于栈的操作：先进后出，最先定义的最后执行。</p>
+<a id="more"></a>
+<p>请先看下边几段代码，然后判断一下各自输出内容：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">// 示例代码一：</span><br><span class="line">func funcA() int &#123;</span><br><span class="line">    x := 5</span><br><span class="line">    defer func() &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;()</span><br><span class="line">    return x</span><br><span class="line">&#125;</span><br><span class="line">// 示例代码二：</span><br><span class="line">func funcB() (x int) &#123;</span><br><span class="line">    defer func() &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;()</span><br><span class="line">    return 5</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 示例代码三：</span><br><span class="line">func funcC() (y int) &#123;</span><br><span class="line">    x := 5</span><br><span class="line">    defer func() &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;()</span><br><span class="line">    return x</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line">// 示例代码四：</span><br><span class="line">func funcD() (x int) &#123;</span><br><span class="line">    defer func(x int) &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;(x)</span><br><span class="line">    return 5</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>解析这几段代码，主要需要理解清楚以下几点知识：</p>
+<h3 id="1-return语句的处理过程"><a href="#1-return语句的处理过程" class="headerlink" title="1. return语句的处理过程"></a>1. return语句的处理过程</h3><p>return xxx 语句并不是一条原子指令，其在执行的时候会进行语句分解成 返回变量=xxx return，最后执行return</p>
+<h3 id="2-defer语句执行时机"><a href="#2-defer语句执行时机" class="headerlink" title="2. defer语句执行时机"></a>2. defer语句执行时机</h3><p>上文说过，defer语句是在函数关闭的时候调用，确切的说是在执行return语句的时候调用，注意，是return 不是return xxx</p>
+<h3 id="3-函数参数的传递方式"><a href="#3-函数参数的传递方式" class="headerlink" title="3. 函数参数的传递方式"></a>3. 函数参数的传递方式</h3><p>Go语言中普通的函数参数的传递方式是值传递，即新辟内存拷贝变量值，不包括slice和map，这两种类型是引用传递</p>
+<h3 id="4-变量赋值的传递方式"><a href="#4-变量赋值的传递方式" class="headerlink" title="4. 变量赋值的传递方式"></a>4. 变量赋值的传递方式</h3><p>Go语言变量的赋值跟函数参数类似，也是值拷贝，不包括slice和map，这两种类型是内存引用</p>
+<p>按照以上原则，解析代码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">// 解析代码一：返回temp的值，在将x赋值给temp后，temp未发生改变，最终返回值为5</span><br><span class="line">func funcA() int &#123;</span><br><span class="line">    x := 5</span><br><span class="line">    temp=x      #temp变量表示未显示声明的return变量</span><br><span class="line">    func() &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;()</span><br><span class="line">    return</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 解析代码二：返回x的值，先对其复制5，接着函数中改变为6，最终返回值为6</span><br><span class="line">func funcB() (x int) &#123;</span><br><span class="line">    x = 5</span><br><span class="line">    func() &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;()</span><br><span class="line">    return</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 解析代码三：返回y的值，在将x赋值给y后，y未发生改变，最终返回值为5</span><br><span class="line">func funcC() (y int) &#123;</span><br><span class="line">    x := 5</span><br><span class="line">    y = x       #这里是值拷贝</span><br><span class="line">    func() &#123;</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;()</span><br><span class="line">    return</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 解析代码四：返回x的值，传递x到匿名函数中执行时，传递的是x的拷贝，不影响外部x的值，最终返回值为5</span><br><span class="line">func funcD() (x int) &#123;</span><br><span class="line">    x := 5</span><br><span class="line">    func(x int) &#123; #这里是值拷贝</span><br><span class="line">        x += 1</span><br><span class="line">    &#125;(x)</span><br><span class="line">    return</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="Error"><a href="#Error" class="headerlink" title="Error"></a>Error</h1><p>Go语言 通过支持多返回值，让在运行时返回详细的错误信息给调用者变得非常方便。我们可以在编码中通过实现 error 接口类型来生成错误信息，error 接口的定义如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">type error interface &#123;</span><br><span class="line">    Error() string</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>还是通过下面的例子来看看：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	&quot;fmt&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">// 定义一个 DivideError 结构</span><br><span class="line">type DivideError struct &#123;</span><br><span class="line">	dividee int</span><br><span class="line">	divider int</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 实现 	`error` 接口</span><br><span class="line">func (de *DivideError) Error() string &#123;</span><br><span class="line">	strFormat := `</span><br><span class="line">	Cannot proceed, the divider is zero.</span><br><span class="line">	dividee: %d</span><br><span class="line">	divider: 0`</span><br><span class="line">	return fmt.Sprintf(strFormat, de.dividee)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 定义 `int` 类型除法运算的函数</span><br><span class="line">func Divide(varDividee int, varDivider int) (result int, errorMsg string) &#123;</span><br><span class="line">	if varDivider == 0 &#123;</span><br><span class="line">		dData := DivideError&#123;</span><br><span class="line">			dividee: varDividee,</span><br><span class="line">			divider: varDivider,</span><br><span class="line">		&#125;</span><br><span class="line">		errorMsg = dData.Error()</span><br><span class="line">		return</span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		return varDividee / varDivider, &quot;&quot;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line"></span><br><span class="line">	// 正常情况</span><br><span class="line">	if result, errorMsg := Divide(100, 10); errorMsg == &quot;&quot; &#123;</span><br><span class="line">		fmt.Println(&quot;100/10 = &quot;, result)</span><br><span class="line">	&#125;</span><br><span class="line">	// 当被除数为零的时候会返回错误信息</span><br><span class="line">	if _, errorMsg := Divide(100, 0); errorMsg != &quot;&quot; &#123;</span><br><span class="line">		fmt.Println(&quot;errorMsg is: &quot;, errorMsg)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>运行后可以看到下面的输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">100/10 =  10</span><br><span class="line">errorMsg is:  </span><br><span class="line">	Cannot proceed, the divider is zero.</span><br><span class="line">	dividee: 100</span><br><span class="line">	divider: 0</span><br></pre></td></tr></table></figure></p>
+<h1 id="Panic-和-recover"><a href="#Panic-和-recover" class="headerlink" title="Panic 和 recover"></a>Panic 和 recover</h1><p>定义如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">func panic(interface&#123;&#125;)</span><br><span class="line">func recover() interface&#123;&#125;</span><br></pre></td></tr></table></figure></p>
+<p>panic 和 recover 是两个内置函数，用于处理 run-time panics 以及程序中自定义的错误。</p>
+<p>当执行一个函数 F 的时候，如果显式地调用 panic 函数或者一个 run-time panics 发生时，F 会结束运行，所有 F 中 defer 的函数会按照 FILO 的规则被执行。之后，F 函数的调用者中 defer 的函数再被执行，如此一直到最外层代码。这时，程序已经被中断了而且错误也被一层层抛出来了，其中包括 panic 函数的参数。当前被中断的 goroutine 被称为处于 panicking 状态。由于 panic 函数的参数是空接口类型，所以可以接受任何类型的对象：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">panic(42)</span><br><span class="line">panic(42)</span><br><span class="line">panic(&quot;unreachable&quot;)</span><br><span class="line">panic(Error(&quot;cannot parse&quot;))</span><br></pre></td></tr></table></figure></p>
+<p>recover 函数用来获取 panic 函数的参数信息，只能在延时调用 defer 语句调用的函数中直接调用才能生效，如果在 defer 语句中也调用 panic 函数，则只有最后一个被调用的 panic 函数的参数会被 recover 函数获取到。如果 goroutine 没有 panic，那调用 recover 函数会返回 nil。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	&quot;fmt&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">// 最简单的例子</span><br><span class="line">func SimplePanicRecover() &#123;</span><br><span class="line">	defer func() &#123;</span><br><span class="line">		if err := recover(); err != nil &#123;</span><br><span class="line">			fmt.Println(&quot;Panic info is: &quot;, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	panic(&quot;SimplePanicRecover function panic-ed!&quot;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 当 defer 中也调用了 panic 函数时，最后被调用的 panic 函数的参数会被后面的 recover 函数获取到</span><br><span class="line">// 一个函数中可以定义多个 defer 函数，按照 FILO 的规则执行</span><br><span class="line">func MultiPanicRecover() &#123;</span><br><span class="line">	defer func() &#123;</span><br><span class="line">		if err := recover(); err != nil &#123;</span><br><span class="line">			fmt.Println(&quot;Panic info is: &quot;, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	defer func() &#123;</span><br><span class="line">		panic(&quot;MultiPanicRecover defer inner panic&quot;)</span><br><span class="line">	&#125;()</span><br><span class="line">	defer func() &#123;</span><br><span class="line">		if err := recover(); err != nil &#123;</span><br><span class="line">			fmt.Println(&quot;Panic info is: &quot;, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	panic(&quot;MultiPanicRecover function panic-ed!&quot;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// recover 函数只有在 defer 函数中被直接调用的时候才可以获取 panic 的参数</span><br><span class="line">func RecoverPlaceTest() &#123;</span><br><span class="line">	// 下面一行代码中 recover 函数会返回 nil，但也不影响程序运行</span><br><span class="line">	defer recover()</span><br><span class="line">	// recover 函数返回 nil</span><br><span class="line">	defer fmt.Println(&quot;recover() is: &quot;, recover())</span><br><span class="line">	defer func() &#123;</span><br><span class="line">		func() &#123;</span><br><span class="line">			// 由于不是在 defer 调用函数中直接调用 recover 函数，recover 函数会返回 nil</span><br><span class="line">			if err := recover(); err != nil &#123;</span><br><span class="line">				fmt.Println(&quot;Panic info is: &quot;, err)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;()</span><br><span class="line"></span><br><span class="line">	&#125;()</span><br><span class="line">	defer func() &#123;</span><br><span class="line">		if err := recover(); err != nil &#123;</span><br><span class="line">			fmt.Println(&quot;Panic info is: &quot;, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	panic(&quot;RecoverPlaceTest function panic-ed!&quot;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 如果函数没有 panic，调用 recover 函数不会获取到任何信息，也不会影响当前进程。</span><br><span class="line">func NoPanicButHasRecover() &#123;</span><br><span class="line">	if err := recover(); err != nil &#123;</span><br><span class="line">		fmt.Println(&quot;NoPanicButHasRecover Panic info is: &quot;, err)</span><br><span class="line">	&#125; else &#123;</span><br><span class="line">		fmt.Println(&quot;NoPanicButHasRecover Panic info is: &quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 定义一个调用 recover 函数的函数</span><br><span class="line">func CallRecover() &#123;</span><br><span class="line">	if err := recover(); err != nil &#123;</span><br><span class="line">		fmt.Println(&quot;Panic info is: &quot;, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// 定义个函数，在其中 defer 另一个调用了 recover 函数的函数</span><br><span class="line">func RecoverInOutterFunc() &#123;</span><br><span class="line">	defer CallRecover()</span><br><span class="line">	panic(&quot;RecoverInOutterFunc function panic-ed!&quot;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	SimplePanicRecover()</span><br><span class="line">	MultiPanicRecover()</span><br><span class="line">	RecoverPlaceTest()</span><br><span class="line">	NoPanicButHasRecover()</span><br><span class="line">	RecoverInOutterFunc()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>运行后可以看到下面的输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Panic info is:  SimplePanicRecover function panic-ed!</span><br><span class="line">Panic info is:  MultiPanicRecover function panic-ed!</span><br><span class="line">Panic info is:  MultiPanicRecover defer inner panic</span><br><span class="line">Panic info is:  RecoverPlaceTest function panic-ed!</span><br><span class="line">recover() is:  &lt;nil&gt;</span><br><span class="line">NoPanicButHasRecover Panic info is:  &lt;nil&gt;</span><br><span class="line">Panic info is:  RecoverInOutterFunc function panic-ed!</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Go/" rel="tag"># Go</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/07/26/clone/" rel="next" title="java的浅拷贝和深拷贝">
+                <i class="fa fa-chevron-left"></i> java的浅拷贝和深拷贝
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.jpg"
+                alt="欧钟艺" />
+            
+              <p class="site-author-name" itemprop="name">欧钟艺</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">4</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  <a href="https://github.com/252748371" target="_blank" title="GitHub"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                  
+                </span>
+              
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的-error-对象返回给调用者，那我们可以尽量少甚至可以不用-panic-函数。"><span class="nav-number">1.</span> <span class="nav-text">1. 如果项目中的代码、使用的标准库以及第三方库在运行时内部捕获了异常并通过合适的 error 对象返回给调用者，那我们可以尽量少甚至可以不用 panic 函数。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-如果无法保证上面的情况，那为了确保程序在运行时不会因为-未知的未知-导致崩溃，那-panic-函数的使用可能不得不加在任何需要的地方。"><span class="nav-number">2.</span> <span class="nav-text">2. 如果无法保证上面的情况，那为了确保程序在运行时不会因为 未知的未知 导致崩溃，那 panic 函数的使用可能不得不加在任何需要的地方。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景可能出现的情况，处理好-已知的未知，在确定需要的地方使用-panic-机制。"><span class="nav-number">3.</span> <span class="nav-text">3. 我们应该认识到，panic是我们和计算机都不希望看到的，应该在设计开发的时候充分考虑使用场景可能出现的情况，处理好 已知的未知，在确定需要的地方使用 panic 机制。</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#defer"><span class="nav-number"></span> <span class="nav-text">defer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-return语句的处理过程"><span class="nav-number">1.</span> <span class="nav-text">1. return语句的处理过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-defer语句执行时机"><span class="nav-number">2.</span> <span class="nav-text">2. defer语句执行时机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-函数参数的传递方式"><span class="nav-number">3.</span> <span class="nav-text">3. 函数参数的传递方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-变量赋值的传递方式"><span class="nav-number">4.</span> <span class="nav-text">4. 变量赋值的传递方式</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Error"><span class="nav-number"></span> <span class="nav-text">Error</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Panic-和-recover"><span class="nav-number"></span> <span class="nav-text">Panic 和 recover</span></a></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">欧钟艺</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动 v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Muse</a> v6.3.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/three/three-waves.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.3.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.3.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.3.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.3.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.3.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
