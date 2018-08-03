@@ -116,7 +116,7 @@
 <meta property="og:site_name" content="欧钟艺的博客">
 <meta property="og:description" content="调度的机制用一句话描述：runtime准备好G,P,M，然后M绑定P，M从各种队列中获取G，切换到G的执行栈上并执行G上的任务函数，调用goexit做清理工作并回到M，如此反复。 基本概念M（machine） M代表着真正的执行计算资源，可以认为它就是os thread（系统线程）。 M是真正调度系统的执行者，每个M就像一个勤劳的工作者，总是从各种队列中找到可运行的G，而且这样M的可以同时存在多个">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2018-08-03T01:38:27.254Z">
+<meta property="og:updated_time" content="2018-08-03T02:04:23.526Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Golang的调度模型概览">
 <meta name="twitter:description" content="调度的机制用一句话描述：runtime准备好G,P,M，然后M绑定P，M从各种队列中获取G，切换到G的执行栈上并执行G上的任务函数，调用goexit做清理工作并回到M，如此反复。 基本概念M（machine） M代表着真正的执行计算资源，可以认为它就是os thread（系统线程）。 M是真正调度系统的执行者，每个M就像一个勤劳的工作者，总是从各种队列中找到可运行的G，而且这样M的可以同时存在多个">
@@ -335,7 +335,7 @@
                 
               
 
-              <time title="创建时间：2018-08-03 09:38:06 / 修改时间：09:38:27" itemprop="dateCreated datePublished" datetime="2018-08-03T09:38:06+08:00">2018-08-03</time>
+              <time title="创建时间：2018-08-03 09:38:06 / 修改时间：10:04:23" itemprop="dateCreated datePublished" datetime="2018-08-03T09:38:06+08:00">2018-08-03</time>
             
 
             
@@ -379,6 +379,7 @@
 <li>M是真正调度系统的执行者，每个M就像一个勤劳的工作者，总是从各种队列中找到可运行的G，而且这样M的可以同时存在多个。</li>
 <li>M在绑定有效的P后，进入调度循环，而且M并不保留G状态，这是G可以跨M调度的基础。</li>
 </ul>
+<a id="more"></a>
 <h4 id="P（processor）"><a href="#P（processor）" class="headerlink" title="P（processor）"></a>P（processor）</h4><ul>
 <li>P表示逻辑processor，是线程M的执行的上下文。</li>
 <li>P的最大作用是其拥有的各种G对象队列、链表、cache和状态。</li>
