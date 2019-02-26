@@ -289,7 +289,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.ozy.tech/2018/09/06/p2p3/">
+    <link itemprop="mainEntityOfPage" href="http://blog.ozy.tech/2019/02/26/EXPLAIN命令详解/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="欧钟艺">
@@ -308,8 +308,8 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/09/06/p2p3/" itemprop="url">
-                  P2P技术详解(三)：P2P技术之STUN、TURN、ICE详解
+                <a class="post-title-link" href="/2019/02/26/EXPLAIN命令详解/" itemprop="url">
+                  EXPLAIN 命令详解
                 </a>
               
             
@@ -335,7 +335,7 @@
                 
               
 
-              <time title="创建时间：2018-09-06 17:28:06 / 修改时间：17:30:10" itemprop="dateCreated datePublished" datetime="2018-09-06T17:28:06+08:00">2018-09-06</time>
+              <time title="创建时间：2019-02-26 10:37:24 / 修改时间：10:39:42" itemprop="dateCreated datePublished" datetime="2019-02-26T10:37:24+08:00">2019-02-26</time>
             
 
             
@@ -374,318 +374,37 @@
 
       
         
-          <h2 id="1、内容概述"><a href="#1、内容概述" class="headerlink" title="1、内容概述"></a>1、内容概述</h2><p>在现实Internet网络环境中，大多数计算机主机都位于防火墙或NAT之后，只有少部分主机能够直接接入Internet。很多时候，我们希望网络中的两台主机能够直接进行通信，即所谓的P2P通信，而不需要其他公共服务器的中转。由于主机可能位于防火墙或NAT之后，在进行P2P通信之前，我们需要进行检测以确认它们之间能否进行P2P通信以及如何通信。这种技术通常称为NAT穿透（NAT Traversal）。最常见的NAT穿透是基于UDP的技术，如RFC3489中定义的STUN协议。</p>
-<p>STUN，首先在RFC3489中定义，作为一个完整的NAT穿透解决方案，英文全称是Simple Traversal of UDP Through NATs，即简单的用UDP穿透NAT。</p>
-<p>在新的RFC5389修订中把STUN协议定位于为穿透NAT提供工具，而不是一个完整的解决方案，英文全称是Session Traversal Utilities for NAT，即NAT会话穿透效用。RFC5389与RFC3489除了名称变化外，最大的区别是支持TCP穿透。</p>
-<p>TURN，首先在RFC5766中定义，英文全称是Traversal Using Relays around NAT:Relay Extensions to Session Traversal Utilities for NAT，即使用中继穿透NAT:STUN的扩展。简单的说，TURN与STURN的共同点都是通过修改应用层中的私网地址达到NAT穿透的效果，异同点是TURN是通过两方通讯的“中间人”方式实现穿透。</p>
-<p>ICE跟STUN和TURN不一样，ICE不是一种协议，而是一个框架（Framework），它整合了STUN和TURN。</p>
-<h2 id="2、STUN详解"><a href="#2、STUN详解" class="headerlink" title="2、STUN详解"></a>2、STUN详解</h2><p>了解STUN之前，我们需要了解NAT的种类。</p>
-<p>NAT对待UDP的实现方式有4种，分别如下：</p>
+          <p>在工作中，我们用于捕捉性能问题最常用的就是打开慢查询，定位执行效率差的SQL，那么当我们定位到一个SQL以后还不算完事，我们还需要知道该SQL的执行计划，比如是全表扫描，还是索引扫描，这些都需要通过EXPLAIN去完成。EXPLAIN命令是查看优化器如何决定执行查询的主要方法。可以帮助我们深入了解MySQL的基于开销的优化器，还可以获得很多可能被优化器考虑到的访问策略的细节，以及当运行SQL语句时哪种策略预计会被优化器采用。需要注意的是，生成的QEP并不确定，它可能会根据很多因素发生改变。MySQL不会将一个QEP和某个给定查询绑定，QEP将由SQL语句每次执行时的实际情况确定，即便使用存储过程也是如此。尽管在存储过程中SQL语句都是预先解析过的，但QEP仍然会在每次调用存储过程的时候才被确定。</p>
+<h2 id="执行计划包含的信息"><a href="#执行计划包含的信息" class="headerlink" title="执行计划包含的信息"></a>执行计划包含的信息</h2><table>
+<thead>
+<tr>
+<th>id</th>
+<th>select_type</th>
+<th>table</th>
+<th>type</th>
+<th>possible_keys</th>
+<th>key</th>
+<th>key_len</th>
+<th>ref</th>
+<th>rows</th>
+<th>Extra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="id"><a href="#id" class="headerlink" title="id"></a>id</h2><p>包含一组数字，表示查询中执行select子句或操作表的顺序</p>
+<ol>
+<li>id相同，执行顺序由上至下</li>
+<li>如果是子查询，id的序号会递增，id值越大优先级越高，越先被执行</li>
+<li>id如果相同，可以认为是一组，从上往下顺序执行；在所有组中，id值越大，优先级越高，越先执行</li>
+</ol>
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2018/09/06/p2p3/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.ozy.tech/2018/09/06/p2p2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="欧钟艺">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="欧钟艺的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/06/p2p2/" itemprop="url">
-                  P2P技术详解(二)：P2P中的NAT穿越(打洞)方案详解
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-
-              
-                
-              
-
-              <time title="创建时间：2018-09-06 17:28:03 / 修改时间：17:29:45" itemprop="dateCreated datePublished" datetime="2018-09-06T17:28:03+08:00">2018-09-06</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <h2 id="1、内容概述"><a href="#1、内容概述" class="headerlink" title="1、内容概述"></a>1、内容概述</h2><p>P2P即点对点通信，或称为对等联网，与传统的服务器客户端模式（如下图“P2P结构模型”所示）有着明显的区别，在即时通讯方案中应用广泛（比如IM应用中的实时音视频通信、实时文件传输甚至文字聊天等）。</p>
-<p>P2P可以是一种通信模式、一种逻辑网络模型、一种技术、甚至一种理念。在P2P网络中（如右图所示），所有通信节点的地位都是对等的，每个节点都扮演着客户机和服务器双重角色，节点之间通过直接通信实现文件信息、处理器运算能力、存储空间等资源的共享。P2P网络具有分散性、可扩展性、健壮性等特点，这使得P2P技术在信息共享、即时通讯、协同工作、分布式计算、网络存储等领域都有广阔的应用。</p>
-<p>图1 - 经典的CS模式：<br><img src="http://www.52im.net/data/attachment/forum/201610/10/132736s7tqmprzhrz7wzds.jpg" alt="image"></p>
-<p>图2 - P2P结构模型：<br><img src="http://www.52im.net/data/attachment/forum/201610/10/132735dgcypehy72gbrv4d.jpg" alt="image"></p>
-<p>NAT技术和P2P技术作为经典的两项网络技术，在现在的网络上有着广泛的应用，P2P主机位于NAT网关后面的情况屡见不鲜。NAT技术虽然在一定程度上解决了IPv4地址短缺的问题，在构建防火墙、保证网络安全方面都发挥了一定的作用，却破坏了端到端的网络通信。NAT阻碍主机进行P2P通信的主要原因是NAT不允许外网主机主动访问内网主机，但是P2P技术却要求通信双方都能主动发起访问，所以要在NAT网络环境中进行有效的P2P通信，就必须采用新的解决方案。</p>
-<p>P2P作为一项实用的技术，有很大的优化空间，并且相对于网络设备，基于P2P的应用程序在实现上更为灵活。所以为了兼容NAT，基于P2P的应用程序在开发的时候大多会根据自身特点加入一些穿越NAT的功能以解决上述问题。以下着重介绍几种常见的P2P穿越NAT方案。</p>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/09/06/p2p2/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.ozy.tech/2018/09/06/p2p1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="欧钟艺">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="欧钟艺的博客">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/06/p2p1/" itemprop="url">
-                  P2P技术详解(一)：NAT详解——详细原理、P2P简介
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-
-              
-                
-              
-
-              <time title="创建时间：2018-09-06 17:27:56 / 修改时间：17:28:54" itemprop="dateCreated datePublished" datetime="2018-09-06T17:27:56+08:00">2018-09-06</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <h1 id="1-IPv4协议和NAT的由来"><a href="#1-IPv4协议和NAT的由来" class="headerlink" title="1. IPv4协议和NAT的由来"></a>1. IPv4协议和NAT的由来</h1><p>今天，无数快乐的互联网用户在尽情享受Internet带来的乐趣。他们浏览新闻，搜索资料，下载软件，广交新朋，分享信息，甚至于足不出户获取一切日用所需。企业利用互联网发布信息，传递资料和订单，提供技术支持，完成日常办公。然而，Internet在给亿万用户带来便利的同时，自身却面临一个致命的问题：构建这个无所不能的Internet的基础IPv4协议已经不能再提供新的网络地址了。</p>
-<p>2011年2月3日中国农历新年， IANA对外宣布：IPv4地址空间最后5个地址块已经被分配给下属的5个地区委员会。2011年4月15日，亚太区委员会APNIC对外宣布，除了个别保留地址外，本区域所有的IPv4地址基本耗尽。一时之间，IPv4地址作为一种濒危资源身价陡增，各大网络公司出巨资收购剩余的空闲地址。其实，IPv4地址不足问题已不是新问题，早在20年以前，IPv4地址即将耗尽的问题就已经摆在Internet先驱们面前。这不禁让我们想去了解，是什么技术使这一危机延缓了尽20年。</p>
-<p>要找到问题的答案，让我们先来简略回顾一下IPv4协议。</p>
-<p>IPv4即网际网协议第4版——Internet Protocol Version 4的缩写。IPv4定义一个跨越异种网络互连的超级网，它为每个网际网的节点分配全球唯一IP地址。如果我们把Internet比作一个邮政系统，那么IP地址的作用就等同于包含城市、街区、门牌编号在内的完整地址。IPv4使用32bits整数表达一个地址，地址最大范围就是232 约为43亿。以IP创始时期可被联网的设备来看，这样的一个空间已经很大，很难被短时间用完。然而，事实远远超出人们的设想，计算机网络在此后的几十年里迅速壮大，网络终端数量呈爆炸性增长。</p>
-<p>更为糟糕的是，为了路由和管理方便，43亿的地址空间被按照不同前缀长度划分为A,B,C,D类地址网络和保留地址。其中，A类网络地址127段，每段包括主机地址约1678万个。B类网络地址16384段，每段包括65536个主机地址。</p>
-<p><img src="http://www.52im.net/data/attachment/forum/201509/06/200926crr724j68tledk1p.png" alt="image"></p>
-<p>IANA向超大型企业/组织分配A类网络地址，一次一段。向中型企业或教育机构分配B类网络地址，一次一段。这样一种分配策略使得IP地址浪费很严重，很多被分配出去的地址没有真实被利用，地址消耗很快。以至于二十世纪90年代初，网络专家们意识到，这样大手大脚下去，IPv4地址很快就要耗光了。于是，人们开始考虑IPv4的替代方案，同时采取一系列的措施来减缓IPv4地址的消耗。正是在这样一个背景之下，本期的主角闪亮登场，它就是网络地址转换——NAT。</p>
-<p>NAT是一项神奇的技术，说它神奇在于它的出现几乎使IPv4起死回生。在IPv4已经被认为行将结束历史使命之后近20年时间里，人们几乎忘了IPv4的地址空间即将耗尽这样一个事实——在新技术日新月异的时代，20年可算一段漫长的历史。更不用说，在NAT产生以后，网络终端的数量呈加速上升趋势，对IP地址的需求剧烈增加。此足见NAT技术之成功，影响之深远。</p>
-<p>说它神奇，更因为NAT给IP网络模型带来了深远影响，其身影遍布网络每个角落。根据一份最近的研究报告，70%的P2P用户位于NAT网关以内。因为P2P主要运行在终端用户的个人电脑之上，这个数字意味着大多数PC通过NAT网关连接到Internet。如果加上2G和3G方式联网的智能手机等移动终端，在NAT网关之后的用户远远超过这个比例。</p>
-<p>然而当我们求本溯源时却发现一个很奇怪的事实：NAT这一意义重大的技术，竟然没有公认的发明者。NAT第一个版本的RFC作者，只是整理归纳了已被广泛采用的技术。</p>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2018/09/06/p2p1/#more" rel="contents">
+            <a class="btn" href="/2019/02/26/EXPLAIN命令详解/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
@@ -787,12 +506,24 @@
                 
               
 
-              <time title="创建时间：2018-08-20 09:04:55 / 修改时间：09:06:16" itemprop="dateCreated datePublished" datetime="2018-08-20T09:04:55+08:00">2018-08-20</time>
+              <time title="创建时间：2018-08-20 09:04:55" itemprop="dateCreated datePublished" datetime="2018-08-20T09:04:55+08:00">2018-08-20</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -945,12 +676,24 @@
                 
               
 
-              <time title="创建时间：2018-08-17 09:14:42 / 修改时间：09:15:45" itemprop="dateCreated datePublished" datetime="2018-08-17T09:14:42+08:00">2018-08-17</time>
+              <time title="创建时间：2018-08-17 09:14:42" itemprop="dateCreated datePublished" datetime="2018-08-17T09:14:42+08:00">2018-08-17</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -1096,12 +839,24 @@
                 
               
 
-              <time title="创建时间：2018-08-03 09:38:06 / 修改时间：10:04:23" itemprop="dateCreated datePublished" datetime="2018-08-03T09:38:06+08:00">2018-08-03</time>
+              <time title="创建时间：2018-08-03 09:38:06" itemprop="dateCreated datePublished" datetime="2018-08-03T09:38:06+08:00">2018-08-03</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -1245,12 +1000,24 @@
                 
               
 
-              <time title="创建时间：2018-07-27 15:00:17 / 修改时间：15:16:30" itemprop="dateCreated datePublished" datetime="2018-07-27T15:00:17+08:00">2018-07-27</time>
+              <time title="创建时间：2018-07-27 15:00:17" itemprop="dateCreated datePublished" datetime="2018-07-27T15:00:17+08:00">2018-07-27</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -1390,12 +1157,24 @@
                 
               
 
-              <time title="创建时间：2018-07-26 14:11:52 / 修改时间：14:12:21" itemprop="dateCreated datePublished" datetime="2018-07-26T14:11:52+08:00">2018-07-26</time>
+              <time title="创建时间：2018-07-26 14:11:52" itemprop="dateCreated datePublished" datetime="2018-07-26T14:11:52+08:00">2018-07-26</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -1562,7 +1341,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2018-07-20 17:30:25" itemprop="dateModified" datetime="2018-07-20T17:30:25+08:00">2018-07-20</time>
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -1725,7 +1504,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2018-07-27 15:03:55" itemprop="dateModified" datetime="2018-07-27T15:03:55+08:00">2018-07-27</time>
+                <time title="修改时间：2019-02-26 10:29:01" itemprop="dateModified" datetime="2019-02-26T10:29:01+08:00">2019-02-26</time>
               
             
           </span>
@@ -1853,7 +1632,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">10</span>
+                    <span class="site-state-item-count">8</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -1927,7 +1706,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>
